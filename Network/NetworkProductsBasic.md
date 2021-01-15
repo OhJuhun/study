@@ -1,3 +1,11 @@
+# Network Device
+- End to End Host 간 Data를 잘 주고 받을 수 있도록 전달 기능을 하는 Device
+## Data Plane
+- Data를 전달하는 측면
+## Control Plane
+- 전송 제어, 관리 측면
+
+# L1 전송장비
 # L2 Switch
 ## 동작 원리
 1. 자신의 Interface로 들어오는 Frame을 받아 Dmac 정보 확인
@@ -32,7 +40,6 @@
 ### ACL
 - 해당 요청을 받을지 말지를 정함
 ### QoS
-
 
 # L4 Switch
 ## 목적
