@@ -16,3 +16,6 @@ POST /index/document/1 -d '{}' #document 생성
 - Elasticsearch field type -> 숫자 필드들은 기본적으로 숫자로 이해될 수 있는 값들은 숫자로 변경해서 저장.
 - 예를 들어 integer 필드에 4, "4", 4.5 등을 입력하면 모두 자연수 4로 자동으로 변환되어 저장된다.
 
+## Kibana에서 index Pattern
+- 같은 인덱스 패턴 중 다른 type의 Field를 가진 요소가 있다면 conflic error가 발생한다.
+
