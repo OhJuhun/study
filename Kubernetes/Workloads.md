@@ -107,3 +107,145 @@ spec:
 ```
 
 # Workload Resources
+## Deployment
+- Pod와 ReplicaSet에 대한 Declarative Update를 제공
+- Deployment에서 `의도하는 상태 설명`, Deployment Controller에서 현재 상태에서 의도하는 상태로 비율을 조정하며 변경
+- 예시
+    ```yaml
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+    name: nginx-deployment # deployment 이름
+    labels:
+        app: nginx
+    spec:
+    replicas: 3 # replica pod 수
+    selector: # deployment가 관리할 Pod를 찾는 방법 정의
+        matchLabels:
+        app: nginx # app: nginx인 Pod
+    template:
+        metadata:
+        labels:
+            app: nginx #nginx 레이블
+        spec:
+        containers:
+        - name: nginx
+            image: nginx:1.14.2
+            ports:
+            - containerPort: 80
+    ```
+    - 3개의 nginx Pod를 불러오기 위한 replicaSet
+### scaling
+- kubectl scale deployment.v1.apps/nginx-deployment --replicas=10
+### Deployment 상태
+- 새로운 ReplicaSet을 Rollout하는 동안 Progressing, Complete, Fail To Progress 
+#### Progressing
+- 새로운 ReplicaSet 생성
+- 새로운 ReplicaSet Scale Up
+- 기존 ReplicaSet Scale Down
+- 새 Pod Ready or Available
+#### Complete
+- 요청한 모든 update가 완료되었을 때
+- 관련한 모든 Replica를 사용할 수 있을 때
+- 이전 Replica가 실행되고 있지 않을 때
+#### Fail To Progress
+- 할당량 부족
+- readinessProbe 실패
+- Image pull Error
+- 권한 부족
+- 범위 제한(?)
+- Application Runtime의 잘못된 구성
+- .spec.progressDeadlineSeconds를 지정하여 찾을 수 있음
+    - Deployment의 진행이 정지되었음을 나타내는, Deployment Controller가 대기하는 시간
+
+## ReplicaSet
+- Pod 집합의 실행을 항상 안정적으로 유지하는 것이 목표
+- 명시된 동일 Pod 수에 대한 가용성을 보장하는 데에 사용
+- Pod의 metadata.ownerReferences 필드를 통해 Pod에 연결
+    - 현재 Object가 소유한 Reosurce 명시
+    - 해당 Pod를 소유한 ReplicaSet을 식별하기 위한 소유자 정보를 가짐
+- Selector를 통해 새 Pod 식별
+- custom update orchestration가 필요하거나, don't require updates at all 의 경우에만 ReplicaSet 사용
+
+## StatefulSet
+- Application의 Stateful을 관리하는데 사용하는 워크로드 API Object
+- Pod 집합의 Deployment와 Scaling을 관리, Pod의 순서 및 고유성 보장
+- 각 Pod의 `독자성`을 유지한다. -> 동일한 Spec이지만 교체가 불가하다.
+- re-schedule 간에도 지속적으로 유지되는 식별자를 가짐
+- Storage Volume을 사용해서 Workload에 지속성을 제공하려는 공우, 솔루션의 일부로 StatefulSet을 사용할 수 있다.
+- 장애에 취약
+### 사용
+- 아래에 만족하지 않는다면 Deployment 또는 ReplicaSet을 사용해야 한다.
+    - stable, unique network identifier
+    - stable, persistent storage
+    - ordered, graceful deployment and scaling
+    - ordered, automated rolling update
+
+### 제한 사항
+- Pod에 지정된 Storage는 Persistent Volume Provisioner를 기반으로 하는 storage class를 요청해서 provision하거나 사전에 provision되어 있어야 한다.
+- 삭제 또는 Scale Down해도 연관된 Volume이 삭제되지는 않는다.
+- 현재 Pod의 Network 신원을 책임지고 있는 headless service가 필요하다.
+- StatefulSet 삭제 시 Pod의 종료에 대한 보증을 제공하지 않는다.
+- Pod가 순차적, 정상적으로 종료되려면 삭제전 Scale을 0으로 축소
+### 구성요소
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  ports:
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    app: nginx #StatefulSet의 .spec.template.metadata.labels.app 과 일치해야 한다.
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web
+spec:
+  selector:
+    matchLabels:
+      app: nginx #.spec.template.metadata.labels.app 과 일치해야 한다.
+  serviceName: "nginx"
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: nginx #.spec.selector.matchLabels.app 과 일치해야 한다.
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: nginx
+        image: k8s.gcr.io/nginx-slim:0.8
+        ports:
+        - containerPort: 80
+          name: web
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:
+  - metadata:
+      name: www
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "my-storage-class"
+      resources:
+        requests:
+          storage: 1Gi
+```
+
+## DaemonSet
+- 모든 Node가 Pod의 Replica를 실행하게 한다.
+- Node가 Cluster에 추가되면 Pod도 추가된다.
+- 주로
+    - 모든 Node에서 Cluster Storage Daemon 실행
+    - 모든 Node에서 Log 수집 Daemon 실행
+    - 모든 Node에서 Node Monitoring Daemon 실행
+### 일부 Node에서만 실행
+- .spec.template.spec.nodeSelector를 명시하면 DaemonSet Controller는 이와 일치하는 Node에 Pod 생성
+- .spec.template.spec.affinity를 명시하면 Node Affinity와 일치하는 Node에 Pod 생성
