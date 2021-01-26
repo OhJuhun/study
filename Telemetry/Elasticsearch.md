@@ -19,3 +19,11 @@ POST /index/document/1 -d '{}' #document 생성
 ## Kibana에서 index Pattern
 - 같은 인덱스 패턴 중 다른 type의 Field를 가진 요소가 있다면 conflic error가 발생한다.
 
+## hot warm node
+- hot node
+    - index에 crud가 자주 일어나는 Node
+    - ssd 등의 storage에 적재
+- warm node
+    - index에 query가 거의 없는 오래된 Node
+    - 언제 삭제되어도 상관이 없음
+    - 주로 hdd에 적재
