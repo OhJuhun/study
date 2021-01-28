@@ -1,5 +1,10 @@
 # Pod Spec
 - Pod Spec에 포함되는 것들 정리
+## Pod QoS 클래스 분류
+- BestEffort(최하위 우선순위)
+- Burstable
+- Guranteed
+## Request/limit
 ## restartPolicy
 - Pod의 재시작 정책
 - Pod의 모든 Container에 적용
