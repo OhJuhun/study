@@ -1,0 +1,25 @@
+From d8f3f73c40bd9717a45caf5cf566bf96566de1e8 Mon Sep 17 00:00:00 2001
+From: OhJuhun <ojh0315@naver.com>
+Date: Thu, 28 Jan 2021 21:49:57 +0900
+Subject: [PATCH 1/1] To be continue
+
+ Kubernetes/PodSpec.md
+ 1 file changed, 5 insertions(+)
+
+diff --git a/Kubernetes/PodSpec.md b/Kubernetes/PodSpec.md
+index 1d6c5db..b40295c 100644
+b/Kubernetes/PodSpec.md
+@@ -1,5 +1,10 @@
+ # Pod Spec
+ - Pod Spec에 포함되는 것들 정리
+## Pod QoS 클래스 분류
+ BestEffort(최하위 우선순위)
+ Burstable
+ Guranteed
+## Request/limit
+ ## restartPolicy
+ - Pod의 재시작 정책
+ - Pod의 모든 Container에 적용
+-- 
+2.24.3 (Apple Git-128)
+
