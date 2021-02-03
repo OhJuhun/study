@@ -119,20 +119,20 @@ spec:
     labels:
         app: nginx
     spec:
-    replicas: 3 # replica pod 수
-    selector: # deployment가 관리할 Pod를 찾는 방법 정의
-        matchLabels:
-        app: nginx # app: nginx인 Pod
-    template:
-        metadata:
-        labels:
-            app: nginx #nginx 레이블
-        spec:
-        containers:
-        - name: nginx
-            image: nginx:1.14.2
-            ports:
-            - containerPort: 80
+      replicas: 3 # replica pod 수
+      selector: # deployment가 관리할 Pod를 찾는 방법 정의
+          matchLabels:
+          app: nginx # app: nginx인 Pod
+      template:
+          metadata:
+          labels:
+              app: nginx #nginx 레이블
+          spec:
+          containers:
+          - name: nginx
+              image: nginx:1.14.2
+              ports:
+              - containerPort: 80
     ```
     - 3개의 nginx Pod를 불러오기 위한 replicaSet
 ### scaling
