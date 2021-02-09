@@ -27,3 +27,30 @@ POST /index/document/1 -d '{}' #document 생성
     - index에 query가 거의 없는 오래된 Node
     - 언제 삭제되어도 상관이 없음
     - 주로 hdd에 적재
+
+# Template
+## Create / Update
+```json
+ PUT _template/(index_name)
+{
+    "index_patterns": ["te*", "bar*"],
+    "settings": {
+        "number_of_shards": 1
+    },
+    "mappings": {
+        "_source": {
+            "enabled": false
+        },
+        "properties": {
+            "host_name": {
+                "type": "keyword"
+            },
+            "created_at":{
+                "type": "date",
+                "format": "EEE MMM dd HH:mm:ss Z yyyy"
+            }
+        }
+    }
+}
+```
+# alias
