@@ -31,7 +31,7 @@ POST /index/document/1 -d '{}' #document 생성
 # Template
 ## Create / Update
 ```json
- PUT _template/(index_name)
+ PUT _template/(index_name) 'Content-Type: application/json' -d '
 {
     "index_patterns": ["te*", "bar*"],
     "settings": {
@@ -51,6 +51,58 @@ POST /index/document/1 -d '{}' #document 생성
             }
         }
     }
-}
+}'
 ```
 # alias
+- 특정 index를 alias를 통해 별칭을 정할 수 있다.
+- alias로 들어오는 데이터들은 모두 해당 index에 저장된다.
+## Create
+```json
+POST _aliases -H 'Content-Type: application/json' -d '
+{
+    "actions": [
+        {
+            "add" : {
+                "index" : "some-index",
+                "alias" : "some-alias"
+            }
+        }
+    ]  
+}
+//보통은 아래 명령어로 Create/Remove를 동시에 진행한다.
+POST _aliases -H 'Content-Type: application/json' -d'
+{
+    "actions" : [
+        {
+            "add": {
+                "index": "some-index-new",
+                "alias": "some-alias"
+            },
+            "remove" : {
+                "index" : "some-index",
+                "alias" : "some-alias"
+            }
+       }
+    ]
+}'
+```
+
+## Remove
+```json
+POST _aliases -H 'Content-Type: application/json' -d '
+{
+    "actions": [
+        {
+            "remove" : {
+                "index" : "some-index",
+                "alias" : "some-alias"
+            }
+        }
+    ]  
+}
+```
+
+## READ
+```json
+GET _cat/aliases?v
+```
