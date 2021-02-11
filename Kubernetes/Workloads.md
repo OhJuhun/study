@@ -16,6 +16,7 @@
 - Kubernetes에서 생성, 관리할 수 있는 배포 가능한 가장 작은 컴퓨팅 단위
 - 하나 이상의 Container Group(보통 하나의 Container만 사용하기를 권장함)
 - Storage, Network 공유
+## Singleton Pod
 ## Lifecycle
 - Pending
 - Running
@@ -249,3 +250,12 @@ spec:
 ### 일부 Node에서만 실행
 - .spec.template.spec.nodeSelector를 명시하면 DaemonSet Controller는 이와 일치하는 Node에 Pod 생성
 - .spec.template.spec.affinity를 명시하면 Node Affinity와 일치하는 Node에 Pod 생성
+
+# Replication Controller
+- 언제든지 지정된 수의 Pod Replica가 실행 중임을 보장한다.
+- Pod 또는 동일 종류의 Pod Set이 항상 기동되고 사용 가능한지 확인한다.
+
+## 동작 방식
+- Pod가 너무 많으면 추가적인 Pod를 제거한다.
+- Pod가 너무 적으면 더 많은 Pod를 시작한다.
+- Replication Controller가 유지, 관리하는 Pod는 실패, 삭제, 종료 시 자동으로 교체됨
