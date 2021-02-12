@@ -259,3 +259,17 @@ spec:
 - Pod가 너무 많으면 추가적인 Pod를 제거한다.
 - Pod가 너무 적으면 더 많은 Pod를 시작한다.
 - Replication Controller가 유지, 관리하는 Pod는 실패, 삭제, 종료 시 자동으로 교체됨
+
+# Kubernetes GC
+- 소유자가 없어진 Object를 삭제하는 역할을 한다.
+- 일부 Kubernetes Object는 다른 Object의 Owner이다.
+- Owner Object에 소유된 Object를 Dependent라고 한다.
+- Dependent는 Owner를 나타내는 metadata.ownerReferences field를 가지고 있다.
+- replication controller, replicaset, statefulset, daemonset, deployment, job, cronjob에 의해 생성된 Object의 ownerReference 값을 자동으로 설정한다.
+## 삭제 방식
+- Foreground Cascading
+  - root object가 먼저 deletion in progress 상태가 된다.
+  - 이 때, Object는 REST API를 통해 볼 수 있고, deletionTimestamp가 설정되며  foregroundDeletion에 metadata.finalizers 값이 포함된다.
+  - 또한, 이 상태가 설정되면 GC는 Object의 dependent 항목을 삭제한다.
+- Background Cascading
+  - Owner Object 즉시 삭제 및 GC는 Background에서 dependent를 싹제한다.
