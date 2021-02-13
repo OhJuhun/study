@@ -1,10 +1,11 @@
 # Service
 - Pod 집합에서 실행중인 Application을 Network Service로 노출하는 추상화 방법
 - k8s는 Pod에게 고유한 IP Address와 Pod 집합에 대한 단일 DNS 명을 부여, 그것들 간 LB를 수행할 수 있다.
+- BE Pod가 해당 클러스터의 FE Pod에 기능을 제공하는 경우, 어떻게 연결할 IP Address를 찾을 수 있을지
 
 ## Service Resources
-- k8s에서 service는 Pod의 논리적 집합과 그것들에 접근할 수 있는 정책을 정의하는 추상적 개념
-- Service가 대상으로 하는 Pod 집합은 selector가 결정
+- k8s에서 service는 Pod의 논리적 집합과 그것들에 접근할 수 있는 정책을 정의하는 추상적 개념(Micro-service)
+- Service가 대상으로 하는 Pod set은 selector가 결정
 - pod의 replicaset이 변경되어도 FE에서는 그걸 인식할 필요가 없고, 추적할 이유도 없음
 - 서비스 추상화는 이러한 `디커플링`을 가능하게 한다.
 
@@ -33,3 +34,7 @@ spec:
       port: 80
       targetPort: 9376 #TCP 9376 포트에서 수신
 ```
+
+## Virtual IP & Service Proxy
+- k8s의 `모든 Node는 kube-proxy를 실행`한다.
+- kube-proxy는 ExternalName 이외의 유형의 Service에 대한 virtual IP 형식을 구현한다.
