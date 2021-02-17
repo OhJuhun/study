@@ -41,3 +41,4 @@
 - 위 두 사항으로 인해 `processing latency가 낮다.`
 - 주기적이면서 비동기적으로 `durable storage로 checkpointing`하여 fail시 `exactly-once state consistency를 보장`
 ![메모리 활용 구조](./image/in-memory.png)
+
