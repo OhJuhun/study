@@ -5,7 +5,7 @@
 - Deployment, ReplicaSet
     - Deployment의 모든 Pod가 필요 시 교체, 상호 교체가 가능한 경우 Stateless Application Workload를 관리하기 적합
 - StatefulSet
-    - state를 가지는 하나 이상의 Pod 동작
+    - state를 가지는 하나 이상의 Pod 동작(각 파드에 식별자가 존재)
     - 지속적으로 데이터 기록할 경우 PersistentVolume과 연계하여 StatefulSet 실행 가능
 - DaemonSet
     - Node 수에 맞게 각 Node에서 Pod 정의
@@ -108,6 +108,7 @@ spec:
 ```
 
 # Workload Resources
+- ReplicaSet을 확장한 것들이 관리하는 Pod들의 내용이 서로 다를 수 있다.(?)
 ## Deployment
 - Pod와 ReplicaSet에 대한 Declarative Update를 제공
 - Deployment에서 `의도하는 상태 설명`, Deployment Controller에서 현재 상태에서 의도하는 상태로 비율을 조정하며 변경
@@ -172,7 +173,7 @@ spec:
 - Application의 Stateful을 관리하는데 사용하는 워크로드 API Object
 - Pod 집합의 Deployment와 Scaling을 관리, Pod의 순서 및 고유성 보장
 - 각 Pod의 `독자성`을 유지한다. -> 동일한 Spec이지만 교체가 불가하다.
-- re-schedule 간에도 지속적으로 유지되는 식별자를 가짐
+- Pod가 `re-schedule 간에도 지속적으로 유지되는 식별자`를 가짐
 - Storage Volume을 사용해서 Workload에 지속성을 제공하려는 공우, 솔루션의 일부로 StatefulSet을 사용할 수 있다.
 - 장애에 취약
 ### 사용
@@ -272,4 +273,8 @@ spec:
   - 이 때, Object는 REST API를 통해 볼 수 있고, deletionTimestamp가 설정되며  foregroundDeletion에 metadata.finalizers 값이 포함된다.
   - 또한, 이 상태가 설정되면 GC는 Object의 dependent 항목을 삭제한다.
 - Background Cascading
-  - Owner Object 즉시 삭제 및 GC는 Background에서 dependent를 싹제한다.
+  - Owner Object 즉시 삭제 및 GC는 Background에서 dependent를 삭제한다.
+
+# TTL Controller
+- 실행이 완료된 Resource Object 수명을 제한하는 TTL 메커니즘 제공
+- 현재는 Job만 처리하며 Custom Resource와 같이 실행을 완료할 다른 Resource를 처리하도록 확장될 수 있다.
