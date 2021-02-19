@@ -1,18 +1,21 @@
 # Service
 - Pod 집합에서 실행중인 Application을 Network Service로 노출하는 추상화 방법
 - k8s는 Pod에게 고유한 IP Address와 Pod 집합에 대한 단일 DNS 명을 부여, 그것들 간 LB를 수행할 수 있다.
-- BE Pod가 해당 클러스터의 FE Pod에 기능을 제공하는 경우, 어떻게 연결할 IP Address를 찾을 수 있을지
+
+## Motivation
+- 각 Pod는 고유 IP 주소를 갖지만, `Deployment에서는 한 시점에서 실행되는 Pod Set이 잠시 후 실행되는 것과 다를 수 있다.`
+- 이에 따라 `BE Pod가 해당 클러스터의 FE Pod에 기능을 제공`하는 경우, `어떻게 연결할 IP Address를 찾을 수` 있을지
 
 ## Service Resources
-- k8s에서 service는 Pod의 논리적 집합과 그것들에 접근할 수 있는 정책을 정의하는 추상적 개념(Micro-service)
+- k8s에서 service는 Pod의 논리적 집합과 그것들에 접근할 수 있는 정책을 정의하는 추상적 개념(=Micro-service)
 - Service가 대상으로 하는 Pod set은 selector가 결정
-- pod의 replicaset이 변경되어도 FE에서는 그걸 인식할 필요가 없고, 추적할 이유도 없음
+- BE pod의 replicaset이 변경되어도 FE에서는 그걸 인식할 필요가 없고, 추적할 이유도 없음
 - 서비스 추상화는 이러한 `디커플링`을 가능하게 한다.
 
 ### Cloud-Native Service discovery
 - App에서 Service Discovery를 위해 k8s API를 사용할 수 있는 경우, pod가 변경될 때마다 update되는 end-point를 api server에 query할 수 있다.
 
-## Service 정의하기
+## Defining Service
 - Service는 Pod와 비슷한 REST Object이다.
 - Service definition을 API Server에 POST하여 new instance를 생성할 수 있다.
 - Service Object의 이름은 유효한 DNS Sub-domain name이어야 한다.
@@ -25,15 +28,20 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: my-service
+  name: my-service 
+  # selector controller는 selector와 일치하는 Pod 지속 검색,
+  # my-service 라는 endpoint object에 대한 모든 Update Post
 spec:
   selector:
     app: MyApp # app=MyApp의 Label을 가진 Pod Set와 연결
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 9376 #TCP 9376 포트에서 수신
+      targetPort: 9376 # app=MyApp label을 가진 Pod의 9376 port, default: targetPort=port
 ```
+- k8s는 이 service에 `service proxy가 사용하는 IP 주소(=Cluster IP` 할당
+- Pod의 Port 정의에는 이름이 있고, `service의 targetPort에서 참조 가능`
+- Service가 하나 이상의 Port를 노출해야 하기 때문에, 다중 포트 정의 지원(`다른 프로토콜로도 가능`)
 
 ## Virtual IP & Service Proxy
 - k8s의 `모든 Node는 kube-proxy를 실행`한다.
