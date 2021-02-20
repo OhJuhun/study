@@ -43,10 +43,92 @@ spec:
 - Pod의 Port 정의에는 이름이 있고, `service의 targetPort에서 참조 가능`
 - Service가 하나 이상의 Port를 노출해야 하기 때문에, 다중 포트 정의 지원(`다른 프로토콜로도 가능`)
 
-## Virtual IP & Service Proxy
-- k8s의 `모든 Node는 kube-proxy를 실행`한다.
-- kube-proxy는 ExternalName 이외의 유형의 Service에 대한 virtual IP 형식을 구현한다.
+## Selector가 없는 Service
+- Service는 Pod가 아닌 `다른 종류의 Back-end도 추상화할 수 있다.`
+  - 환경별로 외부 DB Cluster, 자체 DB 사용
+  - 한 Service에서 `다른 Namespace` 또는 `다른 Cluster의 Service를 지정`하려 한다.
+  - workload를 k8s로 migration하고 있다(?) -> k8s에서는 back-end의 일부만 실행한다.
+- 위 경우 Pod Selector 없이 Service 정의가 가능
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9376
+# selector가 없어, endpoint-object를 수동으로 추가해서 수동 매핑해야 한다.
+--
+apiVersion: v1
+metadata:
+  name: my-service # 유효한 DNS sub-domain name이어야 한다.
+subsets:
+  - addresses:
+      - ip: 192.0.2.42
+    ports:
+      - port: 9376
+# Traffic은 192.0.2.42:9376으로 라우팅
+```
 
+## EndpointSlices
+- Endpoint와 유사하지만 여러 resource에 endpoint를 분산시킬 수 있다.(full=100)
+
+## Application protocol
+- appProtocol field는 각 service port에 대한 Application protocol을 지정하는 방법 제공
+- 해당 endpoint, slice object에 의해 Mirroring
+
+## Virtual IP & Service Proxy
+- `모든 Node는 kube-proxy를 실행`한다.
+- kube-proxy는 ExternalName 이외의 유형의 `Service에 대한 virtual IP 형식을 구현`한다.
+
+### User space proxy
+- kube-proxy는 k8s control plane의 service / endpoint object 추가, 제거 감시
+- 각 Service는 local node에서 port를 open
+- 이 proxy port에 대한 연결은 back-end pod 중 하나로 proxy됨
+- kube-proxy가 사용할 back-end pod를 결정할 때 Service의 SessionAffinity 설정 고려
+- service의 clusterIP, port에 대한 트래픽을 캡처하는 Iptables 규칙 설치 -> `traffic을 back-end pod를 proxy하는 poxy port로 redirect`(round-robin)
+- 선택된 첫 pod 미응답 시에 다른 back-end pod로 재시도
+- Client -> clusterIP(iptables) -> kube-proxy (pod 선택 with round-robin)
+- apiserver -> kube-proxy
+
+### iptables proxy
+- kube-proxy는 k8s control plane의 service / endpoint object 추가, 제거 감시
+- 각 Service는 clusterIP, port에 대한 트래픽 캡처 및 traffic을 back-end set 중 하나로 redirect하는 iptables 규칙 설치
+- `임의의 back-end 선택`
+- `iptables 사용시 system overhead가 줄어듬`(userspace, kernel space 사이를 전환할 필요 없이 linux netfilter가 traffic을 처리하기 때문) -> 더 신뢰적
+- 선택된 첫 pod 미응답 시에 연결 fail -> 정상적으로 테스트된 BE만 볼 수 있다 -> `traffic이 failed pod로 전송되는 것 막음`
+- client -> clusterIP(iptables)(BE pod선택)
+- apiserver -> kube-proxy -> clusterIP
+
+### IPVS proxy
+- kube-proxy를 실행하려면, node에서 IPVS를 사용 가능하게 해야 한다.
+  - kube-proxy가 IPVS Proxy에서 시작될 때 IPVS kernel module을 사용할 수 있는지 확인
+  - 감지되지 않으면 iptables proxy에서 실행된다.
+- kube-proxy는 k8s service, end-point 감시
+- netlink interface 호출 및 이에 따른 `IPVS 규칙 생성`, 이를 k8s `service, end-point와 주기적으로 동기화`
+  - IPVS 상태가 `원하는 상태와 일치하도록 보장`
+- service에 접근하면 `Traffic을 IPVS가 Back-end pod중 하나로 보낸다.`
+- iptables와 유사하게 netfilter hook 기반, hash table을 기본 자료구조로 사용, kernel space에서 동작
+  - iptables의 kube-proxy보다 latency가 짧은 traffic redirection
+  - proxy 규칙 동기화시 성능 향상
+  - 높은 network traffic throughput 지원
+- client가 k8s, service, pod에 대해 알지 못하는 경우 
+  - `Service의 IP:port로 향하는 traffic은 적절한 BE로 Proxy된다.`
+- 특정 Client의 연결이 `매번 동일 Pod로 전달되도록 하려면`
+  - service.spec.sessionAffinity=ClusterIP -> `Client의 IP Address 기반으로 Session affinity를 선택`할 수 있게 한다.
+  - service.spec.sessionAffinityConfig.clientIP.timoutSeconds를 통해 세션 고정 시간 설정 가능
+
+- Traffic을 BE Pod로 balancing하기 위한 추가 옵션
+  - rr: round-robin
+  - lc: least connected
+  - dh: destination hashing
+  - sh: source hashing
+  - sed: shorted expected delay
+  - nq: never queued
+- Client -> clusterIP(Vritual Server) (BE pod(real server) 선택)
+- apiserver -> kube-proxy -> clusterIP
 ## Service Discovery
 - 환경 변수, DNS 두 가지의 기본 모드 지원
 
