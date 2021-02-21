@@ -133,7 +133,7 @@ subsets:
 - 환경 변수, DNS 두 가지의 기본 모드 지원
 
 ### 환경 변수
-- Pod가 Node에서 실행될 때, kubelet은 `각 활성화된 Service에 대해 환경 변수 Set을 추가`한다.
+- Pod가 실행될 때, kubelet은 `각 활성화된 Service에 대해 환경 변수 Set을 추가`한다.
 - {SVCNAME}_SERVICE_HOST 및 {SVCNAME}_SERVICE_PORT 변수 지원
 - 서비스 이름은 대문자, -는 _로 변환된다.
 - Service에 접근이 필요한 Pod가 있고, `환경 변수를 통해 Port, ClusterIP를 Client Pod에 부여`하는 경우, `Client Pod 생성 전에 Service를 만들어야 한다.` -> 그렇지 않으면 해당 Client Pod는 환경 변수를 생성할 수 없다.
@@ -141,18 +141,29 @@ subsets:
 ### DNS
 - Add-on을 사용하여 k8s cluster의 dns service를 설정할 수 있다.(필수)
 - my-ns에 my-service가 있는 경우
-  - control plane과 dns 서비스가 함께 작동하여 my-service.my-ns에 대한 dns record를 만든다.
+  - control plane과 dns 서비스가 함께 작동하여 `my-service.my-ns에 대한 dns record를 만든다.
   - my-ns namespace의 Pod들은 간단히 my-service에 대한 이름 조회를 수행하여 찾을 수 잇어야 한다.
 - k8s dns server는 ExternalName service에 접근할 수 있는 유일한 방법이다.
 
 ## Headless Service
 - lb와 single service ip가 필요하지 않은 경우 headless service를 만들 수 있음
   - spec.clusterIP에 "None" 명시
+- k8s 의 implementation에 종속되지 않고 다른 Service Discovery 메커니즘과 interface할 수 있다.
 - Cluster IP가 할당되지 않고 kube-proxy가 이러한 Service를 처리하지 않으며, platform에 의해 lb 또는 proxy를 하지 않는다.
 
-## Service Publishing
-- service를 외부 IP주소에 노출하고 싶은 경우
+### Selector가 있는 Headless Service
+- Endpoint Controller가 API에서 endpoint record 생성, DNS 구성 수정 및 `Service를 지원하는 파드를 직접 가리키는 주소를 반환`한다.
 
+### Selector가 없는 Headless Service
+- endpoint record를 생성하지 않는다.
+- DNS system이 아래 두 가지 중 하나를 찾고 구성
+  - ExternalName-유형 서비스에 대한 CNAME 레코드(=Canonical Name, Domain addr를 다른 Domain addr로 매핑)
+  - 다른 모든 유형에 대해, 서비스의 이름을 공유하는 모든 엔드포인트에 대한 Record
+
+
+## Service Publishing
+- service를 외부 IP주소에 노출하고 싶은 경우 원하는 서비스 종류 지정 가능
+- cf: https://blog.leocat.kr/notes/2019/08/22/translation-kubernetes-nodeport-vs-loadbalancer-vs-ingress
 ### Service Types
 #### ClusterIP(default)
 - Service를 Cluster-internal IP에 Service를 expose
@@ -160,7 +171,8 @@ subsets:
 - Ingress를 통해서도 Service를 노출시킬 수 있다.(Cluster의 진입점 역할을 하며 Service가 아니다.)
 
 #### NodePort
-- 고정 Port로 각 Node의 IP에 Service를 expose
+- Service에 외부 Traffic을 직접 보내는 가장 원시적 방법(cost sensitive할 때를 제외하곤 거의 사용하지 않음)
+- Node의 특정 Port를 열어두고 `이 Port로 보내는 Traffic을 특정 Service로 forwarding`
 - NodePort Service가 Routing되는 ClusterIP Service가 자동으로 생성된다.
 - NodeIP:NodePort에 요청을 통해 `외부에서 서비스에 접속할 수 있다.`
 - --service-node-port-range Flag로 지정된 범위에서 port 할당(default:30000-32767)
@@ -186,11 +198,13 @@ spec:
 ```
 
 #### LoadBalancer
+- 노출하려는 service 마다 자체 IP Addr을 갖게 되어 LB 비용을 지불해야 한다.
 - Cluod provider의 lb를 사용하여 service를 외부에 노출
 - NodePort와 ClusterIP Service가 자동으로 생성된다.
 - 일부는 loadBalancerIP를 지정할 수 있지만, 이를 지원하지 않는 provider에서 지정시 무시된다.
 - protocol을 MixedProtocolLBService가 활성화된 경우 둘 이상의 Port가 정의되어 있을 때 다른 Protocol을 사용할 수 있다.(cloud provider가 지원하는 protocol이어야 함)
-```yaml
+- TLS/SSL
+```yaml자체 
 apiVersion: v1
 kind: Service
 metadata:
@@ -213,5 +227,54 @@ status:
 - 값과 함께 CNAME Record를 Return
 - Service를 externalName field의 콘텐츠에 매핑한다.
 - 어떤 종류의 Proxy도 설정되어 있지 않다.
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  namespace: prod # prod의 my-service 서비스를
+spec:
+  type: ExternalName
+  externalName: my.database.example.com # my.database.example.com 에 매핑
+```
+
+#### ExternalIPs
+- 하나 이상의 Cluster Node로 Routing되는 `External IP가 있는 경우 service가 여기로 노출될 수 있다.`
+- k8s에 의해 관리되지 않아, `클러스터 관리자에게 책임이 있다.`
+- 모든 ServiceTypes와 함께 지정할 수 있다.
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  selector:
+    app: MyApp
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 9376
+  externalIPs:
+    - 80.11.12.10 # 80.11.12.10:80으로 외부에서 접근이 가능하다.
+```
 
 ## 단점
+- VIP용 userspace proxy 사용시, `대규모 클러스터로 확장이 불가능`
+- userspace proxy 사용시 Service에 `접근하는 Packet의 Source IP 주소가 가려진다.` -> NETWORK 방화벽이 불가능하게 한다.
+  - iptables proxy mode의 경우에는 `Cluster 내부 source IP는 가리지 않지만`, `lb 또는 nodePort로 오는 Client에는 영향을 미침`
+
+## virtual IP 구현시 고려해야 할 점
+- 충돌 방지
+- Service IP 주소
+  - Service IP는 `단일 호스트에서 응답하지 않는다.` -> kube-proxy가 iptables를 필요에 따라 redirection되는 Virtual IP 주소를 정의하기 위해 사용
+  - Client가 VIP에 연결하면 `Traffic이 자동으로 적절 end-point로 전송`
+  - 환경 변수와 서비스 용 DNS는 실제로 서비스의 가상 IP 주소 (+ port)로 채워진다.
+- Userspace
+  - Backend service가 생성되면 k8s master는 virtual IP 주소를 할당한다.
+
+## Supported Protocols
+- TCP
+- UDP: type=LoadBalancer 서비스의 경우, UDP 지원은 이 기능을 제공하는 클라우드 공급자에 따라 다르다.
+- SCTP(스트림 제어 프로토콜): SCTP Traffic을 지원하는 Network Plugin을 사용하는 경우 대부분의 Service에 SCTP를 사용할 수 있다. LoadBalancer 서비스의 경우, UDP 지원은 이 기능을 제공하는 클라우드 공급자에 따라 다르다.(대부분 X)
+- HTTP: Cloud provider가 지원하는 경우 lb mode의 service를 사용하여 service의 end-point로 전달하는 외부 http/https reverse proxy 설정 가능
