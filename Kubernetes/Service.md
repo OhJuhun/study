@@ -278,3 +278,6 @@ spec:
 - UDP: type=LoadBalancer 서비스의 경우, UDP 지원은 이 기능을 제공하는 클라우드 공급자에 따라 다르다.
 - SCTP(스트림 제어 프로토콜): SCTP Traffic을 지원하는 Network Plugin을 사용하는 경우 대부분의 Service에 SCTP를 사용할 수 있다. LoadBalancer 서비스의 경우, UDP 지원은 이 기능을 제공하는 클라우드 공급자에 따라 다르다.(대부분 X)
 - HTTP: Cloud provider가 지원하는 경우 lb mode의 service를 사용하여 service의 end-point로 전달하는 외부 http/https reverse proxy 설정 가능
+
+- inbound: 밖에서 서버 안으로 들어오는 traffic
+- outbound: BE에서 밖으로 나가는 traffic(다른 API CALL 등)
