@@ -2,6 +2,11 @@
 ```shell
 awk '{print $1 $2 $4}' ./filename # 구분자 기준으로 1,2,4번 출력 (-F로 구분자 지정, default ' ')
 ```
+# sed
+## all quote -> double quote
+```bash
+sed "s/'/\"/g
+```
 # sort
 - 정렬
 ```shell
@@ -51,3 +56,4 @@ $ tmux attach -t <session_name | session_number> # 세션에 attach
 - ctrl + b, % : 횡 분할
 - ctrl + b, " : 종 분할
 - ctrl + b, x : Pane 삭제
+

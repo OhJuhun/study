@@ -38,8 +38,61 @@
 
 # Configure and deploy the Nagios monitoring node(s).
 - hosts: monitoring
-
   roles:
   - base-apache
   - nagios
 ```
+## with_items
+```yaml
+command: echo {{ item }}
+with_items: "{{ list }}"
+
+---
+command: echo {{ item }}
+with_items:
+  - a
+  - b
+  - c
+```
+
+## templating (Jinja2)
+- dynamic expression이 가능해짐
+- variable에 접근이 가능해짐
+- templating은 task가 target machine으로 보내지기 전에 Ansible Controller에서 발생한다.
+
+### ansible.builtin.template
+- file을 templating해서 target host로 보낸다.
+- Jinja2 templating language support
+```yaml
+- name: Template a file to /etc/file.conf
+  template:
+    src: tpl.conf.j2
+    dest: /etc/file.conf
+    owner: bin
+    group: wheel
+    mode: '0664
+```
+
+### Jinja Syntax
+- {% ... %} : Statement
+- {{ ... }} : Expressions
+- {# ... #} : Comments
+- `# ... ##  : Line statements`
+
+#### Loop Exp
+```jinja2
+{% for row in rows %}
+  <li class="{{ loop.cycle('odd', 'even') }}"> {{ row }}}</li>
+{% endfor %}
+# loop.cycle이 special variable
+```
+| Variable | Description |
+|----------|-------------|
+|loop.index| cur iter(1 indexed)|
+|loop.indexo| cur iter(0 indexed)|
+|loop.revindex| 뒤에서부터 iter (1 indexed)|
+|loop.revindexo | 뒤에서부터 iter (0 indexed) |
+| loop.first | true if first iter|
+| loop.last | true if last iter|
+| loop.length | item 수 |
+| loop.cycle | 
