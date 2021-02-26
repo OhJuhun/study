@@ -20,6 +20,21 @@ cat file | sort | uniq
 
 awk -F , '{ print $3 $9 $22 }' ingress-nginx-controller-8d5k7_ingress-nginx_ingress-nginx-controller-c9dea527676af42d5cdb9de80e4172d66e79059a447616d7efff9047325558e8.log | grep kemi-api
 
+# ln
+- Link file 생성
+## Symbolic Link
+- 원본 파일을 가리키도록 링크만 시켜둔 것
+- Window에서 바로가기 같은 것(크기와는 무관하다)
+```bash
+ln -s /tmp /var/tmp
+```
+## Hard Link
+- 원본 파일과 동일한 내용의 다른 파일
+- 하나를 삭제하더라도 하나는 남아 있음
+- 원본 파일이 변경되면 링크파일 내용도 자동 변경
+```bash
+ln hard_source hard_link
+```
 # tmux
 - terminal multiplexer
 - ssh로만 사용시 접속이 끊길 수도 있으므로 위험
