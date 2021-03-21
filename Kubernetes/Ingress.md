@@ -66,3 +66,38 @@ spec:
 
 ## 다중 매칭
 - 이 경우 가장 긴 일치하는 경로 우선
+
+# hostname wildcard
+- host name에 wild card가 올 수 있음
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-wildcard-host
+spec:
+  rules:
+  - host: "foo.bar.com"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/bar"
+        backend:
+          service:
+            name: service1
+            port:
+              number: 80
+  - host: "*.foo.com"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/foo"
+        backend:
+          service:
+            name: service2
+            port:
+              number: 80
+```
+
+# IngressClass
+- 서로 다른 Controller에 의해 구현될 수 있음
+- 
