@@ -43,6 +43,7 @@ spec:
     - 디스크 기반의 병합 정렬과 같은 스크레치 공간
     - Crash로부터 Recover하기 위해 오래 걸리는 연산을 checkpointing
     - Web server container가 data를 처리하는 동안 Content-manager Container가 fetch하는 파일을 보관
+    - container 간 데이터 교환
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -77,9 +78,6 @@ spec:
 - 암호 등 민감한 정보를 Pod에 전달하는 데에 사용된다.
 - secret을 kubernetes API에 저장할 수 있고, k8s에 직접적으로 연결하지 않고도 Pod에서 사용할 수 있도록 file로 mount할 수 있다.
 - tmpfs로 지원되므로 `비휘발성 storage에 절대 기록되지 않음`
-
-### Persistent Volumes
-
 
 ## subPath
 - volumeMounts.subPath를 사용하여 root 대신 참조하는 Volume내의 하위 경로를 지정할 수 있다.

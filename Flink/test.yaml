@@ -1,0 +1,26 @@
+# Prevent fluentd from handling records containing its own logs. Otherwise
+# it can lead to an infinite loop, when error in sending one message generates
+# another message which also fails to be sent and so on.
+<match fluent.**>
+  @type                           null
+</match>
+
+<source>
+  @type                           tail
+  @id                             in_tail_container_logs
+  path                            /var/log/containers/*.log
+  exclude_path                    ["/var/log/containers/*_kube-system_*.log","/var/log/containers/*_monitoring_*.log","/var/log/containers/fluentd*.log"]
+  pos_file                        /var/log/fluentd-containers.log.pos
+  tag                             kubernetes.*
+  read_from_head                  "#{ENV['FLUENTD_INPUT_READ_FROM_HEAD'] || 'false'}"
+  limit_recently_modified         "#{ENV['LIMIT_RECENTLY_MODIFIED'] || '120m'}"
+  rotate_wait                     0
+  enable_stat_watcher             false
+  <parse>
+    @type                         "#{ENV['K8S_FORMAT_PARSER'] || 'json' }"
+    time_format                   %Y-%m-%dT%H:%M:%S.%NZ
+    time_key                      time
+    keep_time_key                 true
+    timezone                      "+00:00"
+  </parse>
+</source>
