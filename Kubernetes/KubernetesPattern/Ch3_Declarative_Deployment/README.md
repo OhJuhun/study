@@ -115,7 +115,7 @@ spec:
 ![카나리아](./canary.jpeg)
 
 #### 장점
-- `일부 Consumer만 Update된 버전을 사용하게 함`으로써 운영 환경에 `새 버전을 도입할 때 위험을 줄여줌`(A/B test 느낌)
+- `일부 Consumer만 Update된 버전을 사용하게 함`으로써 운영 환경에 `새 버전을 도입할 때 위험을 줄여줌`
 
 ## 정리
 - 배포 전략(Rolling, Recreate)는 기존 Container를 새로운 Container로 교체하는 것을 제어
